@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>閩南旅遊 2026 · 廈門 × 泉州 × 福州</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --red:    #c0392b;
+      --gold:   #d4a017;
+      --ink:    #1a1a2e;
+      --mist:   #f4f1eb;
+      --white:  #ffffff;
+      --shadow: 0 4px 20px rgba(0,0,0,.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: var(--mist);
+      color: var(--ink);
+      line-height: 1.7;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: var(--white);
+      text-align: center;
+      padding: 64px 24px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero-sub {
+      font-size: 16px;
+      opacity: .75;
+      letter-spacing: 1px;
+    }
+    .hero-dates {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .hero-dates span {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+
+    /* ── OVERVIEW CARDS ── */
+    .overview {
+      max-width: 960px;
+      margin: -32px auto 0;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      position: relative;
+      z-index: 10;
+    }
+    .ov-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 20px 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      border-top: 4px solid var(--gold);
+    }
+    .ov-card .icon { font-size: 28px; margin-bottom: 8px; }
+    .ov-card .label { font-size: 12px; color: #888; letter-spacing: 1px; }
+    .ov-card .value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+    /* ── TIMELINE SECTION ── */
+    .section {
+      max-width: 960px;
+      margin: 48px auto;
+      padding: 0 16px;
+    }
+    .section-title {
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .city-block { margin-bottom: 48px; }
+    .city-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--gold);
+    }
+    .city-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .city-xiamen   .city-icon { background: #ffecd2; }
+    .city-quanzhou .city-icon { background: #d4f1f4; }
+    .city-fuzhou   .city-icon { background: #e8d5f5; }
+
+    .city-header h2 { font-size: 24px; font-weight: 800; }
+    .city-header .city-days { font-size: 13px; color: #888; margin-top: 2px; }
+
+    /* DAY CARD */
+    .day-card {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .day-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .day-num {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-weight: 800;
+      flex-shrink: 0;
+      color: var(--white);
+    }
+    .city-xiamen   .day-num { background: linear-gradient(135deg, #e67e22, #d35400); }
+    .city-quanzhou .day-num { background: linear-gradient(135deg, #16a085, #1abc9c); }
+    .city-fuzhou   .day-num { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+
+    .day-num .d-day { font-size: 11px; opacity: .85; }
+    .day-num .d-num { font-size: 22px; line-height: 1; }
+    .day-title { flex: 1; }
+    .day-title h3 { font-size: 17px; font-weight: 700; }
+    .day-title .day-date { font-size: 12px; color: #999; margin-top: 2px; }
+    .day-arrow { font-size: 18px; color: #bbb; transition: transform .3s; }
+    .day-card.open .day-arrow { transform: rotate(180deg); }
+
+    .day-body {
+      display: none;
+      padding: 0 20px 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .day-card.open .day-body { display: block; }
+
+    /* TIMELINE ITEMS */
+    .timeline { position: relative; padding-left: 28px; margin-top: 12px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: #eee;
+    }
+    .tl-item { position: relative; margin-bottom: 16px; }
+    .tl-item::before {
+      content: '';
+      position: absolute;
+      left: -24px; top: 6px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--white);
+      box-shadow: 0 0 0 2px var(--gold);
+    }
+    .tl-time {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .tl-title { font-size: 15px; font-weight: 600; }
+    .tl-desc { font-size: 13px; color: #666; margin-top: 2px; }
+    .tl-tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .tag-food      { background: #fff3cd; color: #856404; }
+    .tag-sight     { background: #d1ecf1; color: #0c5460; }
+    .tag-hotel     { background: #d4edda; color: #155724; }
+    .tag-transport { background: #f8d7da; color: #721c24; }
+    .tag-tip       { background: #e2d9f3; color: #5a3490; }
+    .tag-cost      { background: #e8f5e9; color: #1b5e20; font-weight: 700; }
+
+    /* HOTEL CARD */
+    .hotel-card {
+      background: linear-gradient(135deg, #f8f9fa, #fff);
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .hotel-icon { font-size: 28px; flex-shrink: 0; }
+    .hotel-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .hotel-addr { font-size: 12px; color: #888; margin-top: 4px; }
+    .hotel-times { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+    .hotel-time-item { font-size: 12px; }
+    .hotel-time-item strong { color: var(--red); }
+
+    /* TIPS BOX */
+    .tips-box {
+      background: #fffbf0;
+      border-left: 4px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #5a4a00;
+    }
+    .tips-box strong { display: block; margin-bottom: 4px; }
+
+    /* FOOD GRID */
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .food-item {
+      background: #fff8ee;
+      border: 1px solid #fde8c0;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+    }
+    .food-item .food-emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+    .food-item .food-name { font-weight: 600; }
+    .food-item .food-desc { font-size: 11px; color: #999; margin-top: 2px; }
+
+    /* FOOTER */
+    footer {
+      background: var(--ink);
+      color: rgba(255,255,255,.5);
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      margin-top: 48px;
+    }
+    footer strong { color: var(--gold); }
+
+    /* NAV TABS */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .nav-tab {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 2px solid transparent;
+      background: var(--white);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .nav-tab:hover { transform: translateY(-1px); }
+    .nav-tab.xiamen    { border-color: #e67e22; color: #e67e22; }
+    .nav-tab.quanzhou  { border-color: #16a085; color: #16a085; }
+    .nav-tab.fuzhou    { border-color: #8e44ad; color: #8e44ad; }
+    .nav-tab.cost      { border-color: #c0392b; color: #c0392b; }
+    .nav-tab.map       { border-color: #2980b9; color: #2980b9; }
+
+    /* MAP SECTION */
+    /* DAY-LEVEL MAP */
+    .day-map {
+      height: 230px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 12px 0 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+    .leaflet-popup-content { min-width: 150px; font-family: "PingFang TC", sans-serif; }
+
+    /* COST SECTION */
+    .cost-card {
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .cost-card .cost-label { font-size: 12px; color: #888; }
+    .cost-card .cost-sub   { font-size: 11px; color: #aaa; }
+    .cost-card .cost-amt   { font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .cost-subtotal {
+      text-align: right;
+      font-size: 14px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #ddd;
+    }
+
+    .flight-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--red), #e74c3c);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 { letter-spacing: 2px; }
+      .city-header { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">✈ 2026 閩南深度遊</div>
+  <h1>廈門 <span>×</span> 泉州 <span>×</span> 福州</h1>
+  <p class="hero-sub">品味千年閩南文化 · 探索海絲古城風韻</p>
+  <div class="hero-dates">
+    <span>📅 2026 年 4 月 27 日 — 5 月 2 日</span>
+    <span>🌙 6 天 5 夜</span>
+    <span>🏨 3 城 3 飯店</span>
+  </div>
+</div>
+
+<!-- OVERVIEW CARDS -->
+<div class="overview">
+  <div class="ov-card">
+    <div class="icon">✈️</div>
+    <div class="label">出發</div>
+    <div class="value">4/27 12:50</div>
+    <div style="font-size:12px;color:#999;margin-top:2px;">抵達廈門機場</div>
+  </div>
+  <div class="ov-card">
+    <div class="icon">🌊</div>
+    <div class="label">廈門</div>
+    <div class="value">1 天 1 夜</div>
+    <div style="font-size:12px;color:#999;margin-top:2px;">4/27 – 4/28</div>
+  </div>
+  <div class="ov-card">
+    <div class="icon">🕌</div>
+    <div class="label">泉州</div>
+    <div class="value">2 天 2 夜</div>
+    <div style="font-size:12px;color:#999;margin-top:2px;">4/28 – 4/30</div>
+  </div>
+  <div class="ov-card">
+    <div class="icon">🏯</div>
+    <div class="label">福州</div>
+    <div class="value">2 天 2 夜</div>
+    <div style="font-size:12px;color:#999;margin-top:2px;">4/30 – 5/2</div>
+  </div>
+  <div class="ov-card">
+    <div class="icon">🛫</div>
+    <div class="label">返台</div>
+    <div class="value">5/2 08:45</div>
+    <div style="font-size:12px;color:#999;margin-top:2px;">福州長樂機場</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="section">
+  <p class="section-title">— 每日行程 —</p>
+
+  <div class="nav-tabs">
+    <button class="nav-tab xiamen"   onclick="jumpTo('xiamen')">🌊 廈門</button>
+    <button class="nav-tab quanzhou" onclick="jumpTo('quanzhou')">🕌 泉州</button>
+    <button class="nav-tab fuzhou"   onclick="jumpTo('fuzhou')">🏯 福州</button>
+    <button class="nav-tab cost"     onclick="jumpTo('cost')">💰 費用概算</button>
+  </div>
+
+  <!-- ════ 廈門 ════ -->
+  <div class="city-block city-xiamen" id="xiamen">
+    <div class="city-header">
+      <div class="city-icon">🌊</div>
+      <div>
+        <h2>廈門 Xiamen</h2>
+        <div class="city-days">4月27日 – 4月28日 · 1天1夜 · 鷺島海風</div>
+      </div>
+    </div>
+
+    <!-- Day 1 -->
+    <div class="day-card open">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">1</span></div>
+        <div class="day-title">
+          <h3>抵廈入住 · 中山路漫步</h3>
+          <div class="day-date">2026 年 4 月 27 日（一）</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-time">12:50</div>
+            <div class="tl-title">✈️ 抵達廈門高崎國際機場</div>
+            <div class="tl-desc">入境、提取行李，搭地鐵1號線或機場快巴前往市區（約30–40分鐘）</div>
+            <div class="tl-tags">
+              <span class="tag tag-transport">交通</span>
+              <span class="tag tag-tip">地鐵1號線 → 中山路站</span>
+              <span class="tag tag-cost">地鐵 ¥4–6 ／ 計程車 ¥40–60</span>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">14:00</div>
+            <div class="tl-title">🏨 入住北辰民宿（廈門中山路輪渡碼頭店）</div>
+            <div class="tl-desc">辦理入住、稍作休息，放好行李輕裝出發</div>
+            <div class="tl-tags"><span class="tag tag-hotel">住宿</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">15:00</div>
+            <div class="tl-title">🚶 中山路步行街</div>
+            <div class="tl-desc">廈門最著名的百年騎樓商業街，距飯店步行約5分鐘，逛街、買特產、嚐小吃</div>
+            <div class="tl-tags"><span class="tag tag-sight">景點</span><span class="tag tag-food">美食</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">16:30</div>
+            <div class="tl-title">⛴️ 輪渡碼頭看海景</div>
+            <div class="tl-desc">步行至輪渡碼頭，眺望鼓浪嶼與廈鼓海峽，感受鷺島黃昏氛圍</div>
+            <div class="tl-tags"><span class="tag tag-sight">景點</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">18:00</div>
+            <div class="tl-title">🦪 廈門特色晚餐</div>
+            <div class="tl-desc">於中山路附近品嚐沙茶麵、海蠣煎、薑母鴨等在地小吃</div>
+            <div class="tl-tags"><span class="tag tag-food">美食</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">20:00</div>
+            <div class="tl-title">🌃 中山路夜市漫遊</div>
+            <div class="tl-desc">入夜後的中山路燈火通明，品嚐花生湯、土笋凍等夜宵</div>
+            <div class="tl-tags"><span class="tag tag-food">夜宵</span></div>
+          </div>
+        </div>
+
+        <div class="hotel-card">
+          <div class="hotel-icon">🏨</div>
+          <div>
+            <div class="hotel-name">北辰民宿（廈門中山路輪渡碼頭店）</div>
+            <div class="hotel-addr">福建廈門思明區后廳衙巷19號</div>
+            <div class="hotel-times">
+              <div class="hotel-time-item">入住 <strong>14:00</strong> 後</div>
+              <div class="hotel-time-item">退房 <strong>12:00</strong> 前（隔日）</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <strong style="font-size:14px;">🍜 廈門必嚐美食</strong>
+          <div class="food-grid">
+            <div class="food-item"><span class="food-emoji">🍜</span><div class="food-name">沙茶麵</div><div class="food-desc">廈門靈魂小吃</div></div>
+            <div class="food-item"><span class="food-emoji">🦪</span><div class="food-name">海蠣煎</div><div class="food-desc">鮮甜蚵仔煎蛋</div></div>
+            <div class="food-item"><span class="food-emoji">🥜</span><div class="food-name">花生湯</div><div class="food-desc">甜蜜暖心甜品</div></div>
+            <div class="food-item"><span class="food-emoji">🟡</span><div class="food-name">土笋凍</div><div class="food-desc">獨特海產凍品</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 2 morning -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">2</span></div>
+        <div class="day-title">
+          <h3>廈門早晨 → 前往泉州</h3>
+          <div class="day-date">2026 年 4 月 28 日（二）上午</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-time">08:00</div>
+            <div class="tl-title">🎨 沙坡尾避風塢藝術西區</div>
+            <div class="tl-desc">距飯店步行約15分鐘，廈門最文青的老漁港改造藝術區；老舊船塢化身咖啡廳、藝廊與創意小店，早晨人少氣氛絕佳，非常適合拍照漫遊</div>
+            <div class="tl-tags"><span class="tag tag-sight">文創景點</span><span class="tag tag-tip">步行可達，約¥0門票</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">10:00</div>
+            <div class="tl-title">🍥 早午餐 & 退房準備</div>
+            <div class="tl-desc">於飯店附近享用早午餐，整理行李準備前往泉州</div>
+            <div class="tl-tags"><span class="tag tag-food">用餐</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">12:00前</div>
+            <div class="tl-title">🏨 北辰民宿退房</div>
+            <div class="tl-tags"><span class="tag tag-hotel">退房</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">12:30</div>
+            <div class="tl-title">🚄 廈門 → 泉州</div>
+            <div class="tl-desc">搭高鐵（廈門北站→泉州站）約30分鐘；廈門北站可搭地鐵2號線直達（約45分鐘，¥5）</div>
+            <div class="tl-tags">
+              <span class="tag tag-transport">高鐵</span>
+              <span class="tag tag-tip">廈門北站 → 泉州站</span>
+              <span class="tag tag-cost">高鐵票 ¥36–50／人</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 泉州 ════ -->
+  <div class="city-block city-quanzhou" id="quanzhou">
+    <div class="city-header">
+      <div class="city-icon">🕌</div>
+      <div>
+        <h2>泉州 Quanzhou</h2>
+        <div class="city-days">4月28日 – 4月30日 · 2天2夜 · 海絲古城</div>
+      </div>
+    </div>
+
+    <!-- Day 2 afternoon -->
+    <div class="day-card open">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">2</span></div>
+        <div class="day-title">
+          <h3>抵泉入住 · 西街初探</h3>
+          <div class="day-date">2026 年 4 月 28 日（二）下午</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-time">14:00</div>
+            <div class="tl-title">🏨 入住全季飯店（泉州萬達廣場店）</div>
+            <div class="tl-desc">辦理入住、整頓後輕裝出發探索古城</div>
+            <div class="tl-tags"><span class="tag tag-hotel">住宿</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">15:00</div>
+            <div class="tl-title">🛕 開元寺</div>
+            <div class="tl-desc">泉州最大的佛教寺院，建於唐朝，雙塔「鎮國塔」與「仁壽塔」是城市標誌，列入世界遺產</div>
+            <div class="tl-tags"><span class="tag tag-sight">世界遺產</span><span class="tag tag-sight">唐代古剎</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">16:30</div>
+            <div class="tl-title">🚶 西街漫遊</div>
+            <div class="tl-desc">泉州最古老的街道，緊鄰開元寺，騎樓林立、文創小店、特色咖啡廳，是熱門打卡聖地</div>
+            <div class="tl-tags"><span class="tag tag-sight">景點</span><span class="tag tag-food">小吃</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">18:30</div>
+            <div class="tl-title">🍲 泉州特色晚餐</div>
+            <div class="tl-desc">於西街附近品嚐正宗閩南料理</div>
+            <div class="tl-tags"><span class="tag tag-food">美食</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">20:00</div>
+            <div class="tl-title">🌙 西街夜市</div>
+            <div class="tl-desc">入夜後西街燈光璀璨，品嚐牛肉羹、麵線糊、四果湯等泉州夜宵</div>
+            <div class="tl-tags"><span class="tag tag-food">夜宵</span></div>
+          </div>
+        </div>
+
+        <div class="hotel-card">
+          <div class="hotel-icon">🏨</div>
+          <div>
+            <div class="hotel-name">全季飯店（泉州萬達廣場店）</div>
+            <div class="hotel-addr">福建泉州豐澤區寶洲路406號</div>
+            <div class="hotel-times">
+              <div class="hotel-time-item">入住 <strong>14:00</strong> 後</div>
+              <div class="hotel-time-item">退房 <strong>12:00</strong> 前（4/30）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 3 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">3</span></div>
+        <div class="day-title">
+          <h3>泉州全日 · 世界遺產深度遊</h3>
+          <div class="day-date">2026 年 4 月 29 日（三）</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-time">08:00</div>
+            <div class="tl-title">☕ 早餐出發</div>
+            <div class="tl-desc">飯店早餐或附近早點店，吃碗麵線糊開啟美好的一天</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">08:30</div>
+            <div class="tl-title">🌸 蟳埔村</div>
+            <div class="tl-desc">泉州東海邊的千年漁村，以「蟳埔女」聞名——女性頭戴鮮花簪髻，是閩南最特色的民俗文化；可體驗簪花、漫步古村巷弄，距市區約15分鐘車程</div>
+            <div class="tl-tags">
+              <span class="tag tag-sight">民俗文化</span>
+              <span class="tag tag-tip">打車約¥15，建議早去光線佳</span>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">10:00</div>
+            <div class="tl-title">🕌 清淨寺（艾蘇哈卜清真寺）</div>
+            <div class="tl-desc">中國現存最古老的阿拉伯式清真寺，建於宋代，見證泉州海絲路的宗教多元，世界遺產之一</div>
+            <div class="tl-tags"><span class="tag tag-sight">世界遺產</span><span class="tag tag-sight">宋代建築</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">10:45</div>
+            <div class="tl-title">🌊 天后宮（媽祖廟）& 關岳廟</div>
+            <div class="tl-desc">宋代始建的媽祖廟，是海絲史跡中規模最大的媽祖廟（世界遺產）；清淨寺步行5分鐘可達關岳廟，香火鼎盛</div>
+            <div class="tl-tags"><span class="tag tag-sight">世界遺產</span><span class="tag tag-sight">歷史古蹟</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">12:00</div>
+            <div class="tl-title">🥩 午餐：牛肉小食街</div>
+            <div class="tl-desc">品嚐泉州最著名的牛肉羹、牛肉麵線等，推薦「東街牛肉店」</div>
+            <div class="tl-tags"><span class="tag tag-food">招牌美食</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">13:30</div>
+            <div class="tl-title">🛕 洛伽寺</div>
+            <div class="tl-desc">位於洛江區的千年古剎，依山傍水、環境清幽，是泉州重要的佛教聖地；與洛陽橋同在洛江區，可一併前往</div>
+            <div class="tl-tags">
+              <span class="tag tag-sight">佛教古剎</span>
+              <span class="tag tag-tip">打車約¥25，與洛陽橋相近</span>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">14:30</div>
+            <div class="tl-title">🌉 洛陽橋</div>
+            <div class="tl-desc">宋代跨海石橋，中國四大古橋之一，全長834公尺，開創「筏形基礎」造橋技術，世界遺產；與洛伽寺同區可順遊</div>
+            <div class="tl-tags"><span class="tag tag-sight">世界遺產</span><span class="tag tag-tip">與洛伽寺同遊</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">16:00</div>
+            <div class="tl-title">🏛️ 泉州博物館（海絲館）</div>
+            <div class="tl-desc">了解泉州作為宋元海上絲路起點的歷史脈絡，展示豐富文物</div>
+            <div class="tl-tags"><span class="tag tag-sight">文化</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">18:30</div>
+            <div class="tl-title">🦞 海鮮晚宴</div>
+            <div class="tl-desc">於西街附近享用豐盛閩南海鮮料理，嚐薑母鴨、紅蟳米糕等名菜</div>
+            <div class="tl-tags"><span class="tag tag-food">美食</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <strong style="font-size:14px;">🍽️ 泉州必嚐美食</strong>
+          <div class="food-grid">
+            <div class="food-item"><span class="food-emoji">🥩</span><div class="food-name">牛肉羹</div><div class="food-desc">閩南第一羹</div></div>
+            <div class="food-item"><span class="food-emoji">🍜</span><div class="food-name">麵線糊</div><div class="food-desc">早餐首選</div></div>
+            <div class="food-item"><span class="food-emoji">🟡</span><div class="food-name">土笋凍</div><div class="food-desc">海邊珍品</div></div>
+            <div class="food-item"><span class="food-emoji">🥮</span><div class="food-name">石花膏</div><div class="food-desc">天然消暑品</div></div>
+            <div class="food-item"><span class="food-emoji">🐧</span><div class="food-name">薑母鴨</div><div class="food-desc">暖胃補身</div></div>
+            <div class="food-item"><span class="food-emoji">🦀</span><div class="food-name">紅蟳米糕</div><div class="food-desc">節慶必備</div></div>
+          </div>
+        </div>
+
+        <div class="tips-box">
+          <strong>💡 泉州小提示</strong>
+          景點多為世界文化遺產，建議穿著舒適步行鞋；清淨寺進入需適當著裝（勿穿短褲、短裙）。洛陽橋距市區需搭計程車，建議下午前往。
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 4 morning -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">4</span></div>
+        <div class="day-title">
+          <h3>泉州早晨 → 前往福州</h3>
+          <div class="day-date">2026 年 4 月 30 日（四）上午</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-time">08:00</div>
+            <div class="tl-title">🏡 晉江梧林傳統村落　<span style="font-size:13px;font-weight:400;color:#888;">or 五店市傳統街區</span></div>
+            <div class="tl-desc">
+              <strong>梧林村</strong>：晉江市保存完好的明清閩南紅磚厝與番仔樓（南洋僑鄉風格）群落，是閩南海絲文化與華僑歷史的縮影；建議早去人少，在古厝間靜靜漫步（距市區30–40分鐘）<br>
+              <strong style="color:#16a085;">or 五店市</strong>：若不想跑遠，市區內的晉江五店市同樣保留完好的閩南紅磚建築群，集文創、美食、非遺展演於一體，交通更方便
+            </div>
+            <div class="tl-tags">
+              <span class="tag tag-sight">傳統村落</span>
+              <span class="tag tag-sight">華僑建築</span>
+              <span class="tag tag-tip">梧林：打車約¥35 ／ 五店市：打車約¥15</span>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">10:30</div>
+            <div class="tl-title">🍜 最後一頓泉州早午餐</div>
+            <div class="tl-desc">再吃一碗麵線糊或牛肉羹道別泉州</div>
+            <div class="tl-tags"><span class="tag tag-food">美食</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">12:00前</div>
+            <div class="tl-title">🏨 全季飯店退房</div>
+            <div class="tl-tags"><span class="tag tag-hotel">退房</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">12:30</div>
+            <div class="tl-title">🚄 泉州 → 福州</div>
+            <div class="tl-desc">搭高鐵（泉州站→福州南站）約45分鐘；福州南站至市區搭地鐵5號線（約30分，¥5）或計程車（¥40–60）</div>
+            <div class="tl-tags">
+              <span class="tag tag-transport">高鐵</span>
+              <span class="tag tag-tip">泉州站 → 福州南站</span>
+              <span class="tag tag-cost">高鐵票 ¥59–88／人</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 福州 ════ -->
+  <div class="city-block city-fuzhou" id="fuzhou">
+    <div class="city-header">
+      <div class="city-icon">🏯</div>
+      <div>
+        <h2>福州 Fuzhou</h2>
+        <div class="city-days">4月30日 – 5月2日 · 2天2夜 · 榕城風華</div>
+      </div>
+    </div>
+
+    <!-- Day 4 afternoon -->
+    <div class="day-card open">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">4</span></div>
+        <div class="day-title">
+          <h3>抵榕入住 · 三坊七巷夜遊</h3>
+          <div class="day-date">2026 年 4 月 30 日（四）下午</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-time">14:00</div>
+            <div class="tl-title">🏨 入住福州玖棲公寓（東二環泰禾店）</div>
+            <div class="tl-desc">辦理入住，位於泰禾廣場SOHO B2棟1318，周邊購物便利</div>
+            <div class="tl-tags"><span class="tag tag-hotel">住宿</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">15:00</div>
+            <div class="tl-title">🏘️ 三坊七巷</div>
+            <div class="tl-desc">中國十大歷史文化名街之一，保留唐宋坊巷格局，林則徐、嚴復等名人故居坐落其間，被稱為「中國城市裡坊制度活化石」</div>
+            <div class="tl-tags"><span class="tag tag-sight">國家5A景區</span><span class="tag tag-sight">歷史文化</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">17:30</div>
+            <div class="tl-title">🛍️ 文創手信選購</div>
+            <div class="tl-desc">於三坊七巷內選購福建特產：茉莉花茶、壽山石雕、脫胎漆器</div>
+            <div class="tl-tags"><span class="tag tag-sight">購物</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">18:30</div>
+            <div class="tl-title">🫕 佛跳牆晚宴</div>
+            <div class="tl-desc">在福州必嚐頂級閩菜「佛跳牆」，可預訂三坊七巷附近的老字號閩菜館</div>
+            <div class="tl-tags"><span class="tag tag-food">閩菜招牌</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">20:30</div>
+            <div class="tl-title">🏙️ 上下杭歷史街區夜遊</div>
+            <div class="tl-desc">清末民初的商業中心，保留大量閩商建築，夜晚燈光打卡氣氛極佳</div>
+            <div class="tl-tags"><span class="tag tag-sight">夜遊</span></div>
+          </div>
+        </div>
+
+        <div class="hotel-card">
+          <div class="hotel-icon">🏨</div>
+          <div>
+            <div class="hotel-name">福州玖棲公寓（東二環泰禾店）</div>
+            <div class="hotel-addr">福建福州晉安區岳峰鎮洋頭尾路39號泰禾廣場 SOHO B2棟1318</div>
+            <div class="hotel-times">
+              <div class="hotel-time-item">入住 <strong>14:00</strong> 後</div>
+              <div class="hotel-time-item">退房 <strong>12:00</strong> 前（5/2）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 5 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">5</span></div>
+        <div class="day-title">
+          <h3>福州全日 · 榕城山水名勝</h3>
+          <div class="day-date">2026 年 5 月 1 日（五）五一勞動節</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="tips-box">
+          <strong>⚠️ 五一假期提醒</strong>
+          五一為中國大陸長假，景點人潮較多，建議早出發、提前預約購票，避開高峰用餐時段。
+        </div>
+
+        <div class="timeline" style="margin-top:16px;">
+          <div class="tl-item">
+            <div class="tl-time">07:30</div>
+            <div class="tl-title">⛰️ 鼓山風景區</div>
+            <div class="tl-desc">福州城東名山，主峰海拔969公尺，涌泉寺（千年古剎）座落其上；摩崖石刻群壯觀，登山健行約2–3小時</div>
+            <div class="tl-tags"><span class="tag tag-sight">自然景觀</span><span class="tag tag-sight">佛教聖地</span><span class="tag tag-tip">早去避暑避人潮</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">11:00</div>
+            <div class="tl-title">🌳 西湖公園</div>
+            <div class="tl-desc">福州歷史最悠久的公園，三國時代古蹟，湖光山色，是福州人的休閒心臟地帶</div>
+            <div class="tl-tags"><span class="tag tag-sight">公園</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">12:30</div>
+            <div class="tl-title">🐟 午餐：魚丸 & 肉燕</div>
+            <div class="tl-desc">品嚐福州最具代表性的小吃，「同利肉燕」老字號不可錯過</div>
+            <div class="tl-tags"><span class="tag tag-food">福州招牌</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">14:00</div>
+            <div class="tl-title">⛩️ 煙台山歷史風貌區</div>
+            <div class="tl-desc">19世紀領事館群聚之地，中西合璧建築保存完好，是近現代史與殖民地建築的縮影</div>
+            <div class="tl-tags"><span class="tag tag-sight">近代建築</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">15:30</div>
+            <div class="tl-title">☕ 倉山咖啡文創區</div>
+            <div class="tl-desc">煙台山周邊的文青聚集地，老洋房改建咖啡廳與藝廊，適合下午茶漫步</div>
+            <div class="tl-tags"><span class="tag tag-sight">文創</span><span class="tag tag-food">咖啡</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">17:30</div>
+            <div class="tl-title">🛒 購買伴手禮</div>
+            <div class="tl-desc">茉莉花茶、肉燕皮、線面等，於東百、泰禾廣場或三坊七巷採買</div>
+            <div class="tl-tags"><span class="tag tag-food">伴手禮</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">19:00</div>
+            <div class="tl-title">🥘 最後晚餐：道地閩菜</div>
+            <div class="tl-desc">品嚐紅糟肉、荔枝肉、雞湯汆海蚌等正宗福州菜，告別美好閩南之旅</div>
+            <div class="tl-tags"><span class="tag tag-food">閩菜</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">21:00</div>
+            <div class="tl-title">🧳 打包行李 & 早睡準備</div>
+            <div class="tl-desc">明日須早起前往機場，建議整理行李後盡早就寢</div>
+            <div class="tl-tags"><span class="tag tag-tip">重要提醒</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <strong style="font-size:14px;">🍽️ 福州必嚐美食</strong>
+          <div class="food-grid">
+            <div class="food-item"><span class="food-emoji">🫕</span><div class="food-name">佛跳牆</div><div class="food-desc">閩菜之王</div></div>
+            <div class="food-item"><span class="food-emoji">🟠</span><div class="food-name">魚丸</div><div class="food-desc">福州代名詞</div></div>
+            <div class="food-item"><span class="food-emoji">🥟</span><div class="food-name">肉燕</div><div class="food-desc">太平燕必點</div></div>
+            <div class="food-item"><span class="food-emoji">🍲</span><div class="food-name">紅糟肉</div><div class="food-desc">紅麴獨特風味</div></div>
+            <div class="food-item"><span class="food-emoji">🍵</span><div class="food-name">茉莉花茶</div><div class="food-desc">福州國茶</div></div>
+            <div class="food-item"><span class="food-emoji">🦪</span><div class="food-name">雞湯汆海蚌</div><div class="food-desc">宴客首選</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 6 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-num"><span class="d-day">Day</span><span class="d-num">6</span></div>
+        <div class="day-title">
+          <h3>返台 · 難忘閩南記憶</h3>
+          <div class="day-date">2026 年 5 月 2 日（六）</div>
+        </div>
+        <div class="day-arrow">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="tips-box" style="background:#fff0f0;border-color:var(--red);color:#7a0000;">
+          <strong>⚠️ 重要：退房時間 vs 班機時間</strong>
+          飯店退房為 12:00 前，但班機 08:45 起飛，請務必<strong>前一晚告知飯店</strong>需提前退房（或寄放行李），建議最晚 05:30 前離開飯店出發至機場。
+        </div>
+
+        <div class="timeline" style="margin-top:16px;">
+          <div class="tl-item">
+            <div class="tl-time">05:30</div>
+            <div class="tl-title">⏰ 早起出發</div>
+            <div class="tl-desc">整理最後行李，叫計程車或滴滴前往福州長樂國際機場（約40–50分鐘）；地鐵T1線亦可但凌晨班次少</div>
+            <div class="tl-tags">
+              <span class="tag tag-tip">提前2.5小時到機場</span>
+              <span class="tag tag-cost">計程車 ¥130–160 ／ 地鐵T1 ¥15</span>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">06:15</div>
+            <div class="tl-title">✈️ 抵達福州長樂國際機場</div>
+            <div class="tl-desc">辦理值機、托運行李、安檢，出境手續預留充足時間</div>
+            <div class="tl-tags"><span class="tag tag-transport">機場</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-time">08:45</div>
+            <div class="tl-title">🛫 班機起飛 · 返回台灣</div>
+            <div class="tl-desc">帶著滿滿的閩南回憶與伴手禮，踏上歸途</div>
+            <div class="tl-tags"><span class="tag tag-transport">回家</span></div>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:24px;padding:20px;">
+          <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+          <div style="font-size:18px;font-weight:700;color:var(--ink);">旅程圓滿結束</div>
+          <div style="font-size:14px;color:#888;margin-top:8px;">廈門 · 泉州 · 福州 · 6天5夜閩南深度遊</div>
+          <div class="flight-badge" style="margin:16px auto 0;width:fit-content;">✈ 08:45 福州長樂 → 台灣</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COST SECTION -->
+  <div id="cost" style="background:var(--white);border-radius:16px;box-shadow:var(--shadow);padding:24px;margin-top:32px;">
+    <h3 style="font-size:18px;font-weight:800;margin-bottom:4px;">💰 費用概算</h3>
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">機票 ＋ 住宿 費用總覽（新台幣）</p>
+
+    <!-- 住宿 -->
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:700;color:#16a085;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">🏨 住宿費用</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
+        <div class="cost-card" style="background:#f0faf8;border:1px solid #b2dfdb;">
+          <div class="cost-label">廈門 · 北辰民宿</div>
+          <div class="cost-sub">4/27–4/28 · 1晚</div>
+          <div class="cost-amt" style="color:#16a085;">NT$ 1,604</div>
+        </div>
+        <div class="cost-card" style="background:#f0faf8;border:1px solid #b2dfdb;">
+          <div class="cost-label">泉州 · 全季飯店</div>
+          <div class="cost-sub">4/28–4/30 · 2晚</div>
+          <div class="cost-amt" style="color:#16a085;">NT$ 4,248</div>
+        </div>
+        <div class="cost-card" style="background:#f0faf8;border:1px solid #b2dfdb;">
+          <div class="cost-label">福州 · 玖棲公寓</div>
+          <div class="cost-sub">4/30–5/2 · 2晚</div>
+          <div class="cost-amt" style="color:#16a085;">NT$ 5,195</div>
+        </div>
+      </div>
+      <div class="cost-subtotal" style="color:#16a085;">
+        住宿小計：<strong style="font-size:16px;">NT$ 11,047</strong>
+        <span style="font-size:11px;color:#aaa;margin-left:8px;">1,604 ＋ 4,248 ＋ 5,195</span>
+      </div>
+    </div>
+
+    <!-- 機票 -->
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:700;color:#e67e22;font-size:14px;margin-bottom:12px;">✈️ 機票費用</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
+        <div class="cost-card" style="background:#fff8f0;border:1px solid #ffe0b2;">
+          <div class="cost-label">去程</div>
+          <div class="cost-sub">台灣 → 廈門 · 4/27 12:50</div>
+          <div class="cost-amt" style="color:#e67e22;">NT$ 18,360</div>
+        </div>
+        <div class="cost-card" style="background:#fff8f0;border:1px solid #ffe0b2;">
+          <div class="cost-label">回程</div>
+          <div class="cost-sub">福州 → 台灣 · 5/2 08:45</div>
+          <div class="cost-amt" style="color:#e67e22;">NT$ 17,820</div>
+        </div>
+      </div>
+      <div class="cost-subtotal" style="color:#e67e22;">
+        機票小計：<strong style="font-size:16px;">NT$ 36,180</strong>
+        <span style="font-size:11px;color:#aaa;margin-left:8px;">18,360 ＋ 17,820</span>
+      </div>
+    </div>
+
+    <!-- 總計 -->
+    <div style="background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white;border-radius:14px;padding:24px;text-align:center;">
+      <div style="font-size:13px;opacity:.65;letter-spacing:2px;margin-bottom:10px;">✈ 機 ＋ 🏨 酒　總計</div>
+      <div style="font-size:42px;font-weight:800;color:#d4a017;line-height:1;">NT$ 47,227</div>
+      <div style="margin-top:14px;display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
+        <div style="font-size:12px;opacity:.65;">🏨 住宿 NT$11,047</div>
+        <div style="font-size:12px;opacity:.4;">＋</div>
+        <div style="font-size:12px;opacity:.65;">✈ 機票 NT$36,180</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PACKING LIST -->
+  <div style="background:var(--white);border-radius:16px;box-shadow:var(--shadow);padding:24px;margin-top:32px;">
+    <h3 style="font-size:18px;font-weight:800;margin-bottom:20px;">🎒 行前準備清單</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+      <div>
+        <div style="font-weight:700;color:var(--red);margin-bottom:8px;font-size:14px;">📄 重要文件</div>
+        <ul style="list-style:none;font-size:13px;line-height:2.2;">
+          <li>☐ 台胞證（確認有效期）</li>
+          <li>☐ 回台機票電子票</li>
+          <li>☐ 三家飯店訂單截圖</li>
+          <li>☐ 旅遊保險保單</li>
+          <li>☐ 緊急聯絡人資訊</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:700;color:var(--red);margin-bottom:8px;font-size:14px;">💳 金融準備</div>
+        <ul style="list-style:none;font-size:13px;line-height:2.2;">
+          <li>☐ 人民幣現金（備用）</li>
+          <li>☐ 支付寶 / 微信支付開通</li>
+          <li>☐ 國際信用卡（VISA/MC）</li>
+          <li>☐ 海外提款卡確認</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:700;color:var(--red);margin-bottom:8px;font-size:14px;">📱 手機 & 網路</div>
+        <ul style="list-style:none;font-size:13px;line-height:2.2;">
+          <li>☐ 中國大陸網路 SIM 卡</li>
+          <li>☐ VPN（進中國前先下載）</li>
+          <li>☐ 高德地圖 / 百度地圖</li>
+          <li>☐ 滴滴打車 App</li>
+          <li>☐ 攜程 / 美團 App</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:700;color:var(--red);margin-bottom:8px;font-size:14px;">👜 行李建議</div>
+        <ul style="list-style:none;font-size:13px;line-height:2.2;">
+          <li>☐ 舒適步行鞋（多走路）</li>
+          <li>☐ 薄外套（入夜較涼）</li>
+          <li>☐ 防曬乳 & 墨鏡</li>
+          <li>☐ 折疊雨傘（防雨）</li>
+          <li>☐ 充電寶（景區充電難）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div style="font-size:22px;margin-bottom:8px;">🌺</div>
+  <div><strong>2026 閩南深度遊</strong> · 廈門 × 泉州 × 福州</div>
+  <div style="margin-top:4px;">4月27日 – 5月2日 · 6天5夜 · 願旅途平安順遂</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // ── 每日行程地圖資料 ──
+  // 順序對應 day-body 出現順序（共8個 day-body）
+  const DAY_MAPS = [
+    // [0] Day 1 廈門
+    { color:'#e67e22', spots:[
+      {n:'廈門高崎國際機場', lat:24.5441, lng:118.1270, e:'✈️'},
+      {n:'北辰民宿（中山路輪渡碼頭店）', lat:24.4470, lng:118.0760, e:'🏨'},
+      {n:'中山路步行街', lat:24.4472, lng:118.0764, e:'🚶'},
+      {n:'廈門輪渡碼頭', lat:24.4481, lng:118.0726, e:'⛴️'},
+    ]},
+    // [1] Day 2 廈門早晨 → 泉州
+    { color:'#e67e22', spots:[
+      {n:'沙坡尾避風塢藝術西區', lat:24.4399, lng:118.0695, e:'🎨'},
+      {n:'北辰民宿（退房）', lat:24.4470, lng:118.0760, e:'🏨'},
+    ]},
+    // [2] Day 2 泉州下午
+    { color:'#16a085', spots:[
+      {n:'全季飯店（泉州萬達廣場店）', lat:24.8680, lng:118.5930, e:'🏨'},
+      {n:'開元寺', lat:24.9071, lng:118.5776, e:'🛕'},
+      {n:'西街', lat:24.9085, lng:118.5783, e:'🚶'},
+    ]},
+    // [3] Day 3 泉州全日
+    { color:'#16a085', spots:[
+      {n:'蟳埔村', lat:24.8890, lng:118.6380, e:'🌸'},
+      {n:'清淨寺（艾蘇哈卜清真寺）', lat:24.9016, lng:118.5897, e:'🕌'},
+      {n:'天后宮（媽祖廟）', lat:24.9003, lng:118.5905, e:'🌊'},
+      {n:'洛伽寺', lat:24.9390, lng:118.6240, e:'🛕'},
+      {n:'洛陽橋', lat:24.9690, lng:118.6590, e:'🌉'},
+      {n:'泉州博物館（海絲館）', lat:24.8863, lng:118.5540, e:'🏛️'},
+    ]},
+    // [4] Day 4 泉州早晨 → 福州
+    { color:'#16a085', spots:[
+      {n:'晉江梧林傳統村落', lat:24.8206, lng:118.5537, e:'🏡'},
+      {n:'全季飯店（退房）', lat:24.8680, lng:118.5930, e:'🏨'},
+    ]},
+    // [5] Day 4 福州下午
+    { color:'#8e44ad', spots:[
+      {n:'福州玖棲公寓（東二環泰禾店）', lat:26.0890, lng:119.3360, e:'🏨'},
+      {n:'三坊七巷', lat:26.0773, lng:119.3040, e:'🏘️'},
+      {n:'上下杭歷史街區', lat:26.0715, lng:119.3075, e:'🏙️'},
+    ]},
+    // [6] Day 5 福州全日
+    { color:'#8e44ad', spots:[
+      {n:'鼓山風景區', lat:26.0817, lng:119.3897, e:'⛰️'},
+      {n:'西湖公園', lat:26.0921, lng:119.2941, e:'🌳'},
+      {n:'煙台山歷史風貌區', lat:26.0595, lng:119.3088, e:'⛩️'},
+    ]},
+    // [7] Day 6 返台
+    { color:'#8e44ad', spots:[
+      {n:'福州玖棲公寓（出發）', lat:26.0890, lng:119.3360, e:'🏨'},
+      {n:'福州長樂國際機場', lat:25.9350, lng:119.6633, e:'🛫'},
+    ]},
+  ];
+
+  const initializedMaps = {};
+
+  function makeDotIcon(color, emoji) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="background:${color};border:2.5px solid #fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.35);">${emoji}</div>`,
+      iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -18],
+    });
+  }
+
+  function amapNavUrl(lng, lat, name) {
+    return `https://uri.amap.com/navigation?to=${lng},${lat},${encodeURIComponent(name)}&mode=walking&coordinate=gcj02&callnative=1`;
+  }
+
+  function initDayMap(idx) {
+    const mapId = 'daymap-' + idx;
+    if (initializedMaps[mapId]) {
+      initializedMaps[mapId].invalidateSize();
+      return;
+    }
+    const el = document.getElementById(mapId);
+    const data = DAY_MAPS[idx];
+    if (!el || !data) return;
+
+    const m = L.map(mapId, { zoomControl: true, scrollWheelZoom: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(m);
+
+    const latlngs = data.spots.map(s => [s.lat, s.lng]);
+
+    data.spots.forEach(s => {
+      L.marker([s.lat, s.lng], { icon: makeDotIcon(data.color, s.e) })
+        .addTo(m)
+        .bindPopup(
+          `<b style="font-size:14px;">${s.e} ${s.n}</b><br>
+           <a href="${amapNavUrl(s.lng, s.lat, s.n)}" target="_blank"
+              style="display:inline-block;margin-top:8px;background:#1677ff;color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">
+             🧭 高德導航
+           </a>`,
+          { maxWidth: 210 }
+        );
+    });
+
+    if (latlngs.length > 1) {
+      L.polyline(latlngs, { color: data.color, weight: 2.5, opacity: 0.65, dashArray: '7,5' }).addTo(m);
+      m.fitBounds(L.latLngBounds(latlngs).pad(0.35));
+    } else {
+      m.setView(latlngs[0], 15);
+    }
+
+    initializedMaps[mapId] = m;
+  }
+
+  // 在每個 day-body 最上方插入地圖 div
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.day-body').forEach((body, idx) => {
+      if (idx >= DAY_MAPS.length) return;
+      const div = document.createElement('div');
+      div.className = 'day-map';
+      div.id = 'daymap-' + idx;
+      body.insertBefore(div, body.firstChild);
+      // 若卡片預設展開，立即初始化
+      if (body.closest('.day-card').classList.contains('open')) {
+        setTimeout(() => initDayMap(idx), 150);
+      }
+    });
+  });
+
+  function toggleDay(header) {
+    const card = header.closest('.day-card');
+    card.classList.toggle('open');
+    if (card.classList.contains('open')) {
+      const mapDiv = card.querySelector('.day-map');
+      if (mapDiv) {
+        const idx = parseInt(mapDiv.id.replace('daymap-', ''));
+        setTimeout(() => initDayMap(idx), 250);
+      }
+    }
+  }
+
+  function jumpTo(id) {
+    document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+
+</script>
+</body>
+</html>
